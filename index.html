@@ -121,7 +121,7 @@
         <button onclick="startApp()">Vào app</button>
     </div>
 
-    <!-- HOME SECTION (Pie chart + cảnh báo) -->
+    <!-- HOME SECTION -->
     <div id="homeSection" class="section">
         <h3>THỐNG KÊ THU NHẬP</h3>
         <canvas id="myChart" width="300" height="300"></canvas>
@@ -140,13 +140,13 @@
         <div id="warningMsg" style="margin-top: 10px;"></div>
     </div>
 
-    <!-- STATS SECTION (Bảng phân trang + nhập liệu) -->
+    <!-- STATS SECTION -->
     <div id="statsSection" class="section">
         <div style="border: 2px solid yellow; display: inline-block; padding: 5px 20px; border-radius: 20px; margin-bottom: 10px;">
             <label style="color: yellow;">Tháng:</label>
-            <select id="monthSelect" onchange="reloadData()" style="font-size: 16px;"></select>
+            <select id="monthSelect" style="font-size: 16px;"></select>
             <label style="color: yellow;">Năm:</label>
-            <select id="yearSelect" onchange="reloadData()" style="font-size: 16px;"></select>
+            <select id="yearSelect" style="font-size: 16px;"></select>
         </div>
 
         <h3 style="color: yellow; display: inline-block;">TABLE</h3>
@@ -253,6 +253,16 @@
                 if (y === yearFilter) opt.selected = true;
                 yearSelect.appendChild(opt);
             }
+
+            // Fix bug chọn tháng không cập nhật:
+            monthSelect.onchange = () => {
+                monthFilter = parseInt(monthSelect.value);
+                reloadData();
+            };
+            yearSelect.onchange = () => {
+                yearFilter = parseInt(yearSelect.value);
+                reloadData();
+            };
         }
 
         function displayData() {
