@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Financial Management - HTEAM APP</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -42,9 +42,6 @@
             padding: 10px 10px 80px 10px;
         }
         .active { display: block; }
-        .userInputSection {
-            margin-top: 50px;
-        }
         .footerMenu {
             position: fixed;
             bottom: 0;
@@ -110,14 +107,15 @@
         }
     </style>
 </head>
+
 <body>
     <h1>FINANCIAL MANAGEMENT</h1>
-    <h2>HTEAM APP 1.1</h2>
+    <h2>HTEAM APP 1.2</h2>
 
     <!-- LOGIN SECTION -->
     <div id="loginSection" class="section active">
         <h3>Nhập User để bắt đầu</h3>
-        <input type="text" id="userInput">
+        <input type="text" id="userInput" />
         <button onclick="startApp()">Vào app</button>
     </div>
 
@@ -130,13 +128,12 @@
         <h3 style="margin-top: 20px;">USER: <span id="fullnameDisplay"></span></h3>
 
         <h3>Nhập số cảnh báo</h3>
-        <input type="number" id="warningInput" placeholder="Nhập số VNĐ">
-        <br>
+        <input type="number" id="warningInput" placeholder="Nhập số VNĐ" />
+        <br />
         <label style="font-size: 16px;">
-            <input type="checkbox" id="warningToggle"> Bật cảnh báo
+            <input type="checkbox" id="warningToggle" onchange="checkWarning()" /> Bật cảnh báo
         </label>
-        <br>
-        <button onclick="checkWarning()">Kiểm tra</button>
+        <br />
         <div id="warningMsg" style="margin-top: 10px;"></div>
     </div>
 
@@ -149,8 +146,20 @@
             <select id="yearSelect" style="font-size: 16px;"></select>
         </div>
 
-        <h3 style="color: yellow; display: inline-block;">TABLE</h3>
+        <h3 style="color: yellow;">THỐNG KÊ THEO CÁC THÁNG</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Tháng</th>
+                    <th>Thu nhập</th>
+                    <th>Chi tiêu</th>
+                    <th>Chênh lệch</th>
+                </tr>
+            </thead>
+            <tbody id="monthlyStatsTable"></tbody>
+        </table>
 
+        <h3 style="color: yellow;">CHI TIẾT GIAO DỊCH</h3>
         <table>
             <thead>
                 <tr>
@@ -165,11 +174,11 @@
         <div class="pagination" id="pagination"></div>
 
         <h3 style="color: lime;">• THU NHẬP</h3>
-        <input type="number" id="incomeInput" placeholder="Nhập số tiền" style="border: 2px solid lime;">
+        <input type="number" id="incomeInput" placeholder="Nhập số tiền" style="border: 2px solid lime;" />
         <button class="addButton" onclick="addIncome()">ADD +</button>
 
         <h3 style="color: red;">• CHI TIÊU</h3>
-        <input type="number" id="expenseInput" placeholder="Nhập số tiền" style="border: 2px solid red;">
+        <input type="number" id="expenseInput" placeholder="Nhập số tiền" style="border: 2px solid red;" />
         <select id="expenseNote">
             <option value="- Mua sắm">Mua sắm</option>
             <option value="- Ăn uống">Ăn uống</option>
@@ -182,219 +191,267 @@
     <div id="settingsSection" class="section">
         <h3>Setting</h3>
         <label>
-            <input type="checkbox" id="themeToggle" onchange="toggleTheme()"> Chủ đề sáng/tối
+            <input type="checkbox" id="themeToggle" onchange="toggleTheme()" /> Chủ đề sáng/tối
         </label>
     </div>
 
     <!-- FOOTER MENU -->
-    <div id="footerMenu" class="footerMenu" style="display:none;">
+    <div id="footerMenu" class="footerMenu" style="display: none;">
         <button onclick="showSection('statsSection')">&#128202;</button>
         <button onclick="showSection('homeSection')">&#8962;</button>
         <button onclick="showSection('settingsSection')">&#9881;</button>
     </div>
+<script>
+const apiUrl = 'https://sheetdb.io/api/v1/q7mip11rovpxb';
+let currentUser = '';
+let currentFullname = '';
+let currentPage = 1;
+const rowsPerPage = 5;
+let data = [];
+let monthFilter = (new Date()).getMonth() + 1;
+let yearFilter = (new Date()).getFullYear();
 
-    <script>
-        const apiUrl = 'https://sheetdb.io/api/v1/q7mip11rovpxb';
-        let currentUser = '';
-        let currentFullname = '';
-        let currentPage = 1;
-        const rowsPerPage = 5;
-        let data = [];
-        let monthFilter = (new Date()).getMonth() + 1;
-        let yearFilter = (new Date()).getFullYear();
+async function startApp() {
+    currentUser = document.getElementById('userInput').value.trim();
+    if (!currentUser) return alert('Nhập User!');
+    const res = await fetch(apiUrl);
+    const json = await res.json();
+    const userData = json.filter(row => row.user === currentUser);
 
-        async function startApp() {
-            currentUser = document.getElementById('userInput').value.trim();
-            if (!currentUser) return alert('Nhập User!');
-            const res = await fetch(apiUrl);
-            const json = await res.json();
-            const userData = json.filter(row => row.user === currentUser);
+    if (userData.length === 0) {
+        alert('Không tìm thấy User trong dữ liệu!');
+        return;
+    }
 
-            if (userData.length === 0) {
-                alert('Không tìm thấy User trong dữ liệu!');
-                return;
-            }
+    currentFullname = userData[0].fullname || '';
+    document.getElementById('fullnameDisplay').innerText = currentFullname;
 
-            currentFullname = userData[0].fullname || '';
-            document.getElementById('fullnameDisplay').innerText = currentFullname;
+    data = userData;
+    initMonthYearDropdown();
+    document.getElementById('loginSection').classList.remove('active');
+    document.getElementById('footerMenu').style.display = 'flex';
+    showSection('homeSection');
+}
 
-            data = userData;
-            initMonthYearDropdown();
-            document.getElementById('loginSection').classList.remove('active');
-            document.getElementById('footerMenu').style.display = 'flex';
-            showSection('homeSection');
-        }
+function showSection(sectionId) {
+    document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+    document.getElementById(sectionId).classList.add('active');
+    if (sectionId === 'homeSection') {
+        loadStats();
+        checkWarning();
+    }
+    if (sectionId === 'statsSection') {
+        displayData();
+        displayMonthlyStats();
+    }
+}
 
-        function showSection(sectionId) {
-            document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
-            document.getElementById(sectionId).classList.add('active');
-            if (sectionId === 'homeSection') loadStats();
-            if (sectionId === 'statsSection') displayData();
-        }
+function initMonthYearDropdown() {
+    const monthSelect = document.getElementById('monthSelect');
+    const yearSelect = document.getElementById('yearSelect');
 
-        function initMonthYearDropdown() {
-            const monthSelect = document.getElementById('monthSelect');
-            const yearSelect = document.getElementById('yearSelect');
+    monthSelect.innerHTML = '';
+    for (let i = 1; i <= 12; i++) {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.text = `Tháng ${i}`;
+        if (i === monthFilter) opt.selected = true;
+        monthSelect.appendChild(opt);
+    }
 
-            monthSelect.innerHTML = '';
-            for (let i = 1; i <= 12; i++) {
-                const opt = document.createElement('option');
-                opt.value = i;
-                opt.text = `Tháng ${i}`;
-                if (i === monthFilter) opt.selected = true;
-                monthSelect.appendChild(opt);
-            }
+    yearSelect.innerHTML = '';
+    for (let y = 2024; y <= 2026; y++) {
+        const opt = document.createElement('option');
+        opt.value = y;
+        opt.text = `${y}`;
+        if (y === yearFilter) opt.selected = true;
+        yearSelect.appendChild(opt);
+    }
 
-            yearSelect.innerHTML = '';
-            for (let y = 2024; y <= 2026; y++) {
-                const opt = document.createElement('option');
-                opt.value = y;
-                opt.text = `${y}`;
-                if (y === yearFilter) opt.selected = true;
-                yearSelect.appendChild(opt);
-            }
+    monthSelect.onchange = () => {
+        monthFilter = parseInt(monthSelect.value);
+        reloadData();
+    };
+    yearSelect.onchange = () => {
+        yearFilter = parseInt(yearSelect.value);
+        reloadData();
+    };
+}
 
-            // Fix bug chọn tháng không cập nhật:
-            monthSelect.onchange = () => {
-                monthFilter = parseInt(monthSelect.value);
-                reloadData();
-            };
-            yearSelect.onchange = () => {
-                yearFilter = parseInt(yearSelect.value);
-                reloadData();
-            };
-        }
+function displayData() {
+    const table = document.getElementById('dataTable');
+    table.innerHTML = '';
+    const start = (currentPage - 1) * rowsPerPage;
+    const pageData = data.slice(start, start + rowsPerPage);
 
-        function displayData() {
-            const table = document.getElementById('dataTable');
-            table.innerHTML = '';
-            const start = (currentPage - 1) * rowsPerPage;
-            const pageData = data.slice(start, start + rowsPerPage);
+    pageData.forEach(row => {
+        const incomeValue = parseInt(row.income || 0);
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${row.date}</td>
+            <td class="${row.note.startsWith('add') ? 'income' : 'expense'}">${incomeValue.toLocaleString()} VNĐ</td>
+            <td>${row.note}</td>
+        `;
+        table.appendChild(tr);
+    });
 
-            pageData.forEach(row => {
-                const incomeValue = parseInt(row.income || 0);
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${row.date}</td>
-                    <td class="${row.note.startsWith('add') ? 'income' : 'expense'}">${incomeValue.toLocaleString()} VNĐ</td>
-                    <td>${row.note}</td>
-                `;
-                table.appendChild(tr);
-            });
+    const totalPages = Math.ceil(data.length / rowsPerPage);
+    const pagination = document.getElementById('pagination');
+    pagination.innerHTML = '';
 
-            const totalPages = Math.ceil(data.length / rowsPerPage);
-            const pagination = document.getElementById('pagination');
-            pagination.innerHTML = '';
-
-            for (let i = 1; i <= totalPages; i++) {
-                const btn = document.createElement('button');
-                btn.innerText = i;
-                btn.onclick = () => {
-                    currentPage = i;
-                    displayData();
-                };
-                pagination.appendChild(btn);
-            }
-        }
-
-        async function addIncome() {
-            const income = document.getElementById('incomeInput').value;
-            if (!income) return alert('Nhập số tiền');
-            const today = new Date();
-            const dateStr = `${today.getDate()}/${today.getMonth()+1}/${today.getFullYear()}`;
-
-            await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ data: [{
-                    user: currentUser, fullname: currentFullname, date: dateStr, income, note: 'add'
-                }]})
-            });
-            alert('Đã thêm thu nhập!');
-            reloadData();
-        }
-
-        async function addExpense() {
-            const expense = document.getElementById('expenseInput').value;
-            const note = document.getElementById('expenseNote').value;
-            if (!expense) return alert('Nhập số tiền');
-            const today = new Date();
-            const dateStr = `${today.getDate()}/${today.getMonth()+1}/${today.getFullYear()}`;
-
-            await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ data: [{
-                    user: currentUser, fullname: currentFullname, date: dateStr, income: expense, note
-                }]})
-            });
-            alert('Đã thêm chi tiêu!');
-            reloadData();
-        }
-
-        async function reloadData() {
-            const res = await fetch(apiUrl);
-            const json = await res.json();
-            const monthStr = `/${monthFilter}/${yearFilter}`;
-            data = json.filter(row => row.user === currentUser && row.date.includes(monthStr));
-
+    for (let i = 1; i <= totalPages; i++) {
+        const btn = document.createElement('button');
+        btn.innerText = i;
+        btn.onclick = () => {
+            currentPage = i;
             displayData();
-            loadStats();
+        };
+        pagination.appendChild(btn);
+    }
+}
+
+async function addIncome() {
+    const income = document.getElementById('incomeInput').value;
+    if (!income) return alert('Nhập số tiền');
+    const today = new Date();
+    const dateStr = `${today.getDate()}/${today.getMonth() + 1}/${today.getFullYear()}`;
+
+    await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            data: [{
+                user: currentUser, fullname: currentFullname, date: dateStr, income, note: 'add'
+            }]
+        })
+    });
+    alert('Đã thêm thu nhập!');
+    reloadData();
+}
+
+async function addExpense() {
+    const expense = document.getElementById('expenseInput').value;
+    const note = document.getElementById('expenseNote').value;
+    if (!expense) return alert('Nhập số tiền');
+    const today = new Date();
+    const dateStr = `${today.getDate()}/${today.getMonth() + 1}/${today.getFullYear()}`;
+
+    await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            data: [{
+                user: currentUser, fullname: currentFullname, date: dateStr, income: expense, note
+            }]
+        })
+    });
+    alert('Đã thêm chi tiêu!');
+    reloadData();
+}
+
+async function reloadData() {
+    const res = await fetch(apiUrl);
+    const json = await res.json();
+    const monthStr = `/${monthFilter}/${yearFilter}`;
+    data = json.filter(row => row.user === currentUser && row.date.includes(monthStr));
+
+    displayData();
+    loadStats();
+    displayMonthlyStats();
+    checkWarning();
+}
+
+let totalIncome = 0;
+let totalExpense = 0;
+
+function loadStats() {
+    totalIncome = 0;
+    totalExpense = 0;
+
+    data.forEach(row => {
+        const value = parseInt(row.income || 0);
+        if (row.note.startsWith('add')) totalIncome += value;
+        else totalExpense += value;
+    });
+
+    const ctx = document.getElementById('myChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: ['Thu nhập', 'Chi tiêu'],
+            datasets: [{
+                data: [totalIncome, totalExpense],
+                backgroundColor: ['green', 'red']
+            }]
+        }
+    });
+
+    const chenhLech = totalIncome - totalExpense;
+    document.getElementById('summary').innerHTML = `
+        <p style="color:lime;">• Thu Nhập: ${totalIncome.toLocaleString()} VNĐ</p>
+        <p style="color:red;">• Chi Tiêu: ${totalExpense.toLocaleString()} VNĐ</p>
+        <p style="color:violet;">• Chênh Lệch: ${chenhLech.toLocaleString()} VNĐ</p>
+    `;
+}
+
+function checkWarning() {
+    const limit = parseInt(document.getElementById('warningInput').value || 0);
+    const isEnabled = document.getElementById('warningToggle').checked;
+    const msg = document.getElementById('warningMsg');
+
+    if (!isEnabled) {
+        msg.innerHTML = '<span style="color:gray;">(Cảnh báo đã tắt)</span>';
+        return;
+    }
+
+    if (totalExpense > limit) {
+        msg.innerHTML = '<span style="color:red; font-weight:bold;">❗ CẢNH BÁO CHI TIÊU</span>';
+    } else {
+        msg.innerHTML = '<span style="color:lime;">✅ An toàn</span>';
+    }
+}
+
+function toggleTheme() {
+    document.body.classList.toggle('light');
+}
+
+async function displayMonthlyStats() {
+    const res = await fetch(apiUrl);
+    const json = await res.json();
+    const monthlyStats = {};
+
+    json.filter(row => row.user === currentUser && row.date.includes(`/${yearFilter}`)).forEach(row => {
+        const parts = row.date.split('/');
+        const month = parseInt(parts[1]);
+        const value = parseInt(row.income || 0);
+
+        if (!monthlyStats[month]) {
+            monthlyStats[month] = { income: 0, expense: 0 };
         }
 
-        let totalIncome = 0;
-        let totalExpense = 0;
-
-        function loadStats() {
-            totalIncome = 0;
-            totalExpense = 0;
-
-            data.forEach(row => {
-                const value = parseInt(row.income || 0);
-                if (row.note.startsWith('add')) totalIncome += value;
-                else totalExpense += value;
-            });
-
-            const ctx = document.getElementById('myChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'pie',
-                data: {
-                    labels: ['Thu nhập', 'Chi tiêu'],
-                    datasets: [{
-                        data: [totalIncome, totalExpense],
-                        backgroundColor: ['green', 'red']
-                    }]
-                }
-            });
-
-            const chenhLech = totalIncome - totalExpense;
-            document.getElementById('summary').innerHTML = `
-                <p style="color:lime;">• Thu Nhập: ${totalIncome.toLocaleString()} VNĐ</p>
-                <p style="color:red;">• Chi Tiêu: ${totalExpense.toLocaleString()} VNĐ</p>
-                <p style="color:violet;">• Chênh Lệch: ${chenhLech.toLocaleString()} VNĐ</p>
-            `;
+        if (row.note.startsWith('add')) {
+            monthlyStats[month].income += value;
+        } else {
+            monthlyStats[month].expense += value;
         }
+    });
 
-        function checkWarning() {
-            const limit = parseInt(document.getElementById('warningInput').value || 0);
-            const isEnabled = document.getElementById('warningToggle').checked;
-            const msg = document.getElementById('warningMsg');
+    const table = document.getElementById('monthlyStatsTable');
+    table.innerHTML = '';
 
-            if (!isEnabled) {
-                msg.innerHTML = '<span style="color:gray;">(Cảnh báo đã tắt)</span>';
-                return;
-            }
-
-            if (totalExpense > limit) {
-                msg.innerHTML = '<span style="color:red; font-weight:bold;">❗ CẢNH BÁO CHI TIÊU</span>';
-            } else {
-                msg.innerHTML = '<span style="color:lime;">✅ An toàn</span>';
-            }
-        }
-
-        function toggleTheme() {
-            document.body.classList.toggle('light');
-        }
-    </script>
+    for (let m = 1; m <= 12; m++) {
+        const stats = monthlyStats[m] || { income: 0, expense: 0 };
+        const chenhLech = stats.income - stats.expense;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>Tháng ${m}</td>
+            <td style="color:lime;">${stats.income.toLocaleString()} VNĐ</td>
+            <td style="color:red;">${stats.expense.toLocaleString()} VNĐ</td>
+            <td style="color:violet;">${chenhLech.toLocaleString()} VNĐ</td>
+        `;
+        table.appendChild(tr);
+    }
+}
+</script>
 </body>
 </html>
