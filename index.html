@@ -116,14 +116,18 @@
     <div id="loginSection" class="section active">
         <h3>Nhập User để bắt đầu</h3>
         <input type="text" id="userInput" />
-        <button onclick="startApp()">Vào app</button>
+        <button onclick="startApp()">TIẾP TỤC</button>
     </div>
 
     <!-- HOME SECTION -->
     <div id="homeSection" class="section">
         <h3>THỐNG KÊ THU NHẬP</h3>
-        <canvas id="myChart" width="300" height="300"></canvas>
-        <div id="summary"></div>
+<div style="display: flex; justify-content: center; align-items: center; flex-wrap: wrap;">
+    <div style="width: 200px; height: 200px;">
+        <canvas id="myChart"></canvas>
+    </div>
+    <div id="summary" style="text-align: left; margin-left: 20px;"></div>
+</div>
 
         <h3 style="margin-top: 20px;">USER: <span id="fullnameDisplay"></span></h3>
 
@@ -179,12 +183,20 @@
 
         <h3 style="color: red;">• CHI TIÊU</h3>
         <input type="number" id="expenseInput" placeholder="Nhập số tiền" style="border: 2px solid red;" />
-        <select id="expenseNote">
+        <select id="expenseNote" onchange="toggleOtherCategoryInput()">
             <option value="- Mua sắm">Mua sắm</option>
             <option value="- Ăn uống">Ăn uống</option>
             <option value="- Học tập">Học tập</option>
+            <option value="- Đi lại">Đi lại</option>
+            <option value="- Sửa chữa">Sửa chữa</option>
+            <option value="- Khác">Khác</option>
         </select>
+        <input type="text" id="otherCategoryInput" placeholder="Nhập tên phân loại khác" style="display:none; margin-top:5px;" />
         <button class="addButton" onclick="addExpense()">ADD +</button>
+
+        <!-- NÚT THỐNG KÊ CHI TIẾT -->
+        <button onclick="showDetailedStats()" style="background:orange; color:#000; font-weight:bold; padding:8px 12px; border-radius:5px; border:none; margin-top:10px;">Thống Kê Chi Tiết</button>
+        <div id="detailedStats" style="margin-top:10px; border:1px solid yellow; padding:10px; display:none;"></div>
     </div>
 
     <!-- SETTINGS SECTION -->
@@ -331,8 +343,15 @@ async function addIncome() {
 
 async function addExpense() {
     const expense = document.getElementById('expenseInput').value;
-    const note = document.getElementById('expenseNote').value;
+    let note = document.getElementById('expenseNote').value;
+    const otherNote = document.getElementById('otherCategoryInput').value.trim();
+
     if (!expense) return alert('Nhập số tiền');
+
+    if (note === '- Khác' && otherNote) {
+        note = `- ${otherNote}`;
+    }
+
     const today = new Date();
     const dateStr = `${today.getDate()}/${today.getMonth() + 1}/${today.getFullYear()}`;
 
@@ -452,6 +471,53 @@ async function displayMonthlyStats() {
         table.appendChild(tr);
     }
 }
+
+function toggleOtherCategoryInput() {
+    const expenseNote = document.getElementById('expenseNote').value;
+    const otherInput = document.getElementById('otherCategoryInput');
+    if (expenseNote === '- Khác') {
+        otherInput.style.display = 'block';
+    } else {
+        otherInput.style.display = 'none';
+    }
+}
+
+function showDetailedStats() {
+    let categoryStats = {};
+    totalIncome = 0;
+    totalExpense = 0;
+
+    data.forEach(row => {
+        const value = parseInt(row.income || 0);
+        if (row.note.startsWith('add')) {
+            totalIncome += value;
+        } else {
+            totalExpense += value;
+            const category = row.note.replace('- ', '').trim();
+
+            if (!categoryStats[category]) categoryStats[category] = 0;
+            categoryStats[category] += value;
+        }
+    });
+
+    const chenhLech = totalIncome - totalExpense;
+
+    let html = `
+        <p style="color:lime;">• Tổng Thu Nhập: ${totalIncome.toLocaleString()} VNĐ</p>
+        <p style="color:red;">• Tổng Chi Tiêu: ${totalExpense.toLocaleString()} VNĐ</p>
+        <p style="color:violet;">• Chênh Lệch: ${chenhLech.toLocaleString()} VNĐ</p>
+        <hr style="border:1px solid yellow;">
+        <h4 style="color:yellow;">Chi Tiêu Theo Phân Loại:</h4>
+    `;
+
+    for (let category in categoryStats) {
+        html += `<p style="color:white;">- ${category}: ${categoryStats[category].toLocaleString()} VNĐ</p>`;
+    }
+
+    const detailedStatsDiv = document.getElementById('detailedStats');
+    detailedStatsDiv.innerHTML = html;
+    detailedStatsDiv.style.display = 'block';
+}
 </script>
 </body>
-</html>
+    </html>
